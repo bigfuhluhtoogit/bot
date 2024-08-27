@@ -337,6 +337,7 @@ local function onChatted(player, message)
 
 	if lowerMsg == "!cmds" then
 		sayInChat("All Commands are restricted to " .. controllerName)
+		task.wait(1)
 		sayInChat("Commands are: !stop, !follow, !headsit, !startai, !tweenfly, !tweenstop, !killscript, !emote (1-9), !stalk [username], !lookat [username], !bang [username], fling [username] (only useable in games with player collision.)")
 		print("Displayed commands")
 		return
@@ -375,14 +376,11 @@ end
         sayInChat(player.Name .. ", you are not permitted to use this command.")
     end
 end
-
-	if lowerMsg == "!bang" then
-		sayInChat("Giving " .. player.Name)
-		sayInChat("Devious backshots")
-		bang()
-		leave()
+	
+	if lowerMsg == "!ver" then
+		sayInChat("Version/Build 0.19")
+		return
 	end
-
 
 	if lowerMsg == "!leave" then
 		sayInChat("Leaving in 5 seconds.")
@@ -415,29 +413,7 @@ end
 		return
 	end
 	
-	if lowerMsg == "!ver" then
-		sayInChat("Version/Build 0.19")
-		return
-	end
 
-	if lowerMsg == "!whitelist" then --make it so its !whitelist then the username 
-		sayInChat("Being Worked on.")
-		return
-	end
-
-	if lowerMsg == "!tweenfly" then
-		tweenfly()
-		return
-	end
-
-	if lowerMsg == "!tweenstop" then
-		isTweenFlying = false
-		if currentTween then
-			currentTween:Cancel()
-		end
-		print("Tween flying stopped")
-		return
-	end
 
 	if lowerMsg == "!killscript" then
 		script:Destroy()
