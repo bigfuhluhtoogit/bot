@@ -342,40 +342,6 @@ local function onChatted(player, message)
 		print("Displayed commands")
 		return
 	end
-	if isWhitelisted(player.Name) then
-		if lowerMsg:sub(1, 10) == "!e" then
-			sayInChat("You are not allowed to use this command.")
-			return
-end
-	
-	if player.Name == habibi then
-		if lowerMsg:sub(1, 10) == "!whitelist" then
-			local targetUsername = message:sub(12)
-			if targetUsername and targetUsername ~= "" then
-				addToWhitelist(targetUsername)
-				sayInChat(targetUsername .. " has been whitelisted.")
-			end
-			return
-		elseif lowerMsg:sub(1, 12) == "!unwhitelist" then
-			local targetUsername = message:sub(14)
-			if targetUsername and targetUsername ~= "" then
-				removeFromWhitelist(targetUsername)
-				sayInChat(targetUsername .. " has been removed from the whitelist.")
-			end
-			return
-		end
-	end
-	
-   if isWhitelisted(player.Name) then
-        if lowerMsg:sub(1, 10) == "!whitelist" then
-            sayInChat("You are not allowed to use this command.")
-            return
-        end
-
-    else
-        sayInChat(player.Name .. ", you are not permitted to use this command.")
-    end
-end
 	
 	if lowerMsg == "!ver" then
 		sayInChat("Version/Build 0.19")
