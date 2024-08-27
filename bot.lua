@@ -1,4 +1,3 @@
--- services
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,8 +13,6 @@ local lastAICall = 0
 local aiActive = false
 local controllerName = "habibihadoodoo21"
 local followerName = "ilovecheezburber"
-local habibi = "habibihadoodoo21"
-local whitelist = {habibi}  -- habibi is automatically whitelisted
 local localPlayer = Players.LocalPlayer
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
@@ -94,37 +91,26 @@ local defaultEmotes = {
 }
 
 local function checkAndJump()
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-
-	-- Ensure the character is not sitting or in freefall
 	if humanoid.Sit or humanoid:GetState() == Enum.HumanoidStateType.Seated then
 		humanoid.Jump = true
-		return
-	end
-
-	if humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
-		-- Raycast parameters to exclude the character's parts
+	elseif humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
 		local raycastParams = RaycastParams.new()
 		raycastParams.FilterDescendantsInstances = {character}
 		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-		raycastParams.IgnoreWater = true
 
-		-- Perform raycast in the direction the character is facing
-		local rayDirection = character.HumanoidRootPart.CFrame.LookVector * 5  -- Extend the ray length as needed
 		local raycastResult = workspace:Raycast(
 			character.HumanoidRootPart.Position,
-			rayDirection,
+			character.HumanoidRootPart.CFrame.LookVector * 2,
 			raycastParams
 		)
 
-		-- Check if the raycast hit an object
-		if raycastResult and raycastResult.Instance then
-			-- If an object is detected in front, make the character jump
+		if raycastResult then
 			humanoid.Jump = true
 		end
 	end
 end
+task.wait(0.5)
+RunService.Heartbeat:Connect(checkAndJump)
 
 local function getTorso(character)
 	if character:FindFirstChild("HumanoidRootPart") then
@@ -152,29 +138,29 @@ local function getPlayer(name, speaker)
 end
 
 local function bang(args)
-	local humanoid = speaker.Character:FindFirstChildWhichIsA("Humanoid")
-	local bangAnim = Instance.new("Animation")
+		local humanoid = speaker.Character:FindFirstChildWhichIsA("Humanoid")
+		local bangAnim = Instance.new("Animation")
 
-	-- Check if the character is R15 or R6 and set the appropriate animation
-	if humanoid.RigType == Enum.HumanoidRigType.R15 then
+		-- Check if the character is R15 or R6 and set the appropriate animation
+		if humanoid.RigType == Enum.HumanoidRigType.R15 then
 		bangAnim.AnimationId = "rbxassetid://5918726674" -- R15 animation
 	else
 		bangAnim.AnimationId = "rbxassetid://148840371" -- R6 animation
 	end
 
-	local bang = humanoid:LoadAnimation(bangAnim)
-	bang:Play(0.1, 1, 1)
-	bang:AdjustSpeed(3)
+		local bang = humanoid:LoadAnimation(bangAnim)
+		bang:Play(0.1, 1, 1)
+		bang:AdjustSpeed(3)
 
-	local bangDied
-	bangDied = humanoid.Died:Connect(function()
-		bang:Stop()
-		bangAnim:Destroy()
-		bangDied:Disconnect()
-		bangLoop:Disconnect()
-	end)
+		local bangDied
+		bangDied = humanoid.Died:Connect(function()
+			bang:Stop()
+			bangAnim:Destroy()
+			bangDied:Disconnect()
+			bangLoop:Disconnect()
+		end)
 
-	if args[1] then
+		if args[1] then
 		local players = getPlayer(args[1], speaker)
 		for _, v in pairs(players) do
 			local bangplr = Players[v].Name
@@ -187,7 +173,7 @@ local function bang(args)
 			end)
 		end
 	end
-end
+	end
 
 
 local function getControllerPlayer()
@@ -202,30 +188,6 @@ local function followController()
 	if not targetRoot then return end
 
 	humanoid:MoveTo(targetRoot.Position)
-end
-
-local function isWhitelisted(username)
-	for _, user in ipairs(whitelist) do
-		if user == username then
-			return true
-		end
-	end
-	return false
-end
-
-local function addToWhitelist(username)
-	if not isWhitelisted(username) then
-		table.insert(whitelist, username)
-	end
-end
-
-local function removeFromWhitelist(username)
-	for i, user in ipairs(whitelist) do
-		if user == username then
-			table.remove(whitelist, i)
-			break
-		end
-	end
 end
 
 local function stalkTargetPlayer()
@@ -252,6 +214,41 @@ local function stalkTargetPlayer()
 	humanoid:MoveTo(stalkPosition)
 end
 
+local function getAIResponse(messages)
+	local url = "https://chatgpt-42.p.rapidapi.com/chatbotapi"
+	local headers = {
+		["x-rapidapi-key"] = "51c55c2983mshde73f44bb6cccd5p13c19djsn6dab69383652",
+		["x-rapidapi-host"] = "chatgpt-42.p.rapidapi.com",
+		["Content-Type"] = "application/json"
+	}
+	local payload = {
+		bot_id = "OEXJ8qFp5E5AwRwymfPts90vrHnmr8yZgNE171101852010w2S0bCtN3THp448W7kDSfyTf3OpW5TUVefz",
+		messages = messages,
+		user_id = "",
+		temperature = 0.9,
+		top_k = 5,
+		top_p = 0.9,
+		max_tokens = 256,
+		model = "gpt 3.5"
+	}
+
+	local success, response = pcall(function()
+		return HttpService:RequestAsync({
+			Url = url,
+			Method = "POST",
+			Headers = headers,
+			Body = HttpService:JSONEncode(payload)
+		})
+	end)
+
+	if success and response.StatusCode == 200 then
+		local responseData = HttpService:JSONDecode(response.Body)
+		return responseData.choices[1].message.content
+	else
+		return "Sorry, I couldn't process that request."
+	end
+end
+
 
 
 local function headSit()
@@ -267,7 +264,7 @@ end
 local function leave()
 	humanoid:Destroy()
 end
-
+	
 
 
 
@@ -321,19 +318,35 @@ sayInChat("StarBot Started. made by gepoooo")
 task.wait(1)
 sayInChat(",gg\]bMzMsXyZ")
 
+local function collectPlayerMessages()
+	local LocalPlayer = Players.LocalPlayer
+	local messages = {}
+	local myCharacter = LocalPlayer.Character
+	if not myCharacter or not myCharacter:FindFirstChild("Head") then
+		print("Your character or head not found")
+		return messages
+	end
+end
+
+local function processAIResponses()
+	if aiActive and tick() - lastAICall > aiCooldown then
+		local messages = collectPlayerMessages()
+		if #messages > 0 then
+			local aiResponse = getAIResponse(messages)
+			sayInChat(aiResponse)
+			lastAICall = tick()
+			RunService.Heartbeat:Connect(processAIResponses)
+		end
+	end
+end
+
 
 
 -- Define onChatted function
 local function onChatted(player, message)
-	if player.Name ~= controllerName then 
-		sayInChat(player.Name .. ", you are not permitted to use this command.")
-		return
-	end
-
+	if player.Name ~= controllerName then return end
 
 	local lowerMsg = message:lower()
-	
-	
 
 	if lowerMsg == "!cmds" then
 		sayInChat("All Commands are restricted to " .. controllerName)
@@ -341,42 +354,7 @@ local function onChatted(player, message)
 		print("Displayed commands")
 		return
 	end
-	if isWhitelisted(player.Name) then
-		if lowerMsg:sub(1, 10) == "!e" then
-			sayInChat("You are not allowed to use this command.")
-			return
-end
 	
-	if player.Name == habibi then
-		if lowerMsg:sub(1, 10) == "!whitelist" then
-			local targetUsername = message:sub(12)
-			if targetUsername and targetUsername ~= "" then
-				addToWhitelist(targetUsername)
-				sayInChat(targetUsername .. " has been whitelisted.")
-			end
-			return
-		elseif lowerMsg:sub(1, 12) == "!unwhitelist" then
-			local targetUsername = message:sub(14)
-			if targetUsername and targetUsername ~= "" then
-				removeFromWhitelist(targetUsername)
-				sayInChat(targetUsername .. " has been removed from the whitelist.")
-			end
-			return
-		end
-	end
-	
-   if isWhitelisted(player.Name) then
-        if lowerMsg:sub(1, 10) == "!whitelist" then
-            sayInChat("You are not allowed to use this command.")
-            return
-        end
-
-        -- Add other commands here...
-    else
-        sayInChat(player.Name .. ", you are not permitted to use this command.")
-    end
-end
-
 	if lowerMsg == "!bang" then
 		sayInChat("Giving " .. player.Name)
 		sayInChat("Devious backshots")
@@ -384,7 +362,7 @@ end
 		leave()
 	end
 
-
+	
 	if lowerMsg == "!leave" then
 		sayInChat("Leaving in 5 seconds.")
 		task.wait(5)
@@ -416,10 +394,18 @@ end
 		return
 	end
 
-	if lowerMsg == "!whitelist" then --make it so its !whitelist then the username 
-		sayInChat("Being Worked on.")
+	if lowerMsg == "!startai" then
+		aiActive = true
+		sayInChat("AI activated. Use !stopai to deactivate.")
 		return
 	end
+
+	if lowerMsg == "!stopai" then
+		aiActive = false
+		sayInChat("AI deactivated.")
+		return
+	end
+
 
 	if lowerMsg == "!tweenfly" then
 		tweenfly()
@@ -511,34 +497,41 @@ end
 		return
 	end
 
-
-	RunService.Heartbeat:Connect(function()
-		if isFollowing then
-			followController()
-		elseif isHeadSitting then
-			headSit()
-		elseif isStalkMode then
-			stalkTargetPlayer()
-		elseif isLookingAt and lookAtTarget and lookAtTarget.Character then
-			local targetRoot = lookAtTarget.Character:FindFirstChild("HumanoidRootPart")
-			if targetRoot then
-				root.CFrame = CFrame.new(root.Position, Vector3.new(targetRoot.Position.X, root.Position.Y, targetRoot.Position.Z))
-			end
-		end
-	end)
-
-	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		print("Using TextChatService")
-		TextChatService.OnIncomingMessage = function(message)
-			local player = Players:GetPlayerByUserId(message.TextSource.UserId)
-			onChatted(player, message.Text)
-		end
-	else
-		print("Using LegacyChatService")
-		Players.PlayerChatted:Connect(onChatted)
+	-- Handle AI response when AI is active
+	if aiActive then
+		local aiResponse = getAIResponse(message)
+		wait(math.random(2, 5))  -- Simulate thinking time
+		sayInChat(aiResponse)
+		print("AI response sent: " .. aiResponse)
 	end
-
-	RunService.Heartbeat:Connect(checkAndJump)
-
-	print("Script loaded for " .. followerName .. ". Waiting for commands from " .. controllerName)
 end
+
+RunService.Heartbeat:Connect(function()
+	if isFollowing then
+		followController()
+	elseif isHeadSitting then
+		headSit()
+	elseif isStalkMode then
+		stalkTargetPlayer()
+	elseif isLookingAt and lookAtTarget and lookAtTarget.Character then
+		local targetRoot = lookAtTarget.Character:FindFirstChild("HumanoidRootPart")
+		if targetRoot then
+			root.CFrame = CFrame.new(root.Position, Vector3.new(targetRoot.Position.X, root.Position.Y, targetRoot.Position.Z))
+		end
+	end
+end)
+
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+	print("Using TextChatService")
+	TextChatService.OnIncomingMessage = function(message)
+		local player = Players:GetPlayerByUserId(message.TextSource.UserId)
+		onChatted(player, message.Text)
+	end
+else
+	print("Using LegacyChatService")
+	Players.PlayerChatted:Connect(onChatted)
+end
+
+RunService.Heartbeat:Connect(checkAndJump)
+
+print("Script loaded for " .. followerName .. ". Waiting for commands from " .. controllerName)
