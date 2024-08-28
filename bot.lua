@@ -126,70 +126,6 @@ local function checkAndJump()
 	end
 end
 
-local function getTorso(character)
-	if character:FindFirstChild("HumanoidRootPart") then
-		return character.HumanoidRootPart
-	elseif character:FindFirstChild("Torso") then
-		return character.Torso
-	end
-end
-
-local function getRoot(character)
-	return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
-end
-
-local function getPlayer(name, speaker)
-	local players = {}
-	if name:lower() == "all" then
-		players = Players:GetPlayers()
-	else
-		local player = Players:FindFirstChild(name)
-		if player then
-			table.insert(players, player)
-		end
-	end
-	return players
-end
-
-local function bang(args)
-	local humanoid = speaker.Character:FindFirstChildWhichIsA("Humanoid")
-	local bangAnim = Instance.new("Animation")
-
-	-- Check if the character is R15 or R6 and set the appropriate animation
-	if humanoid.RigType == Enum.HumanoidRigType.R15 then
-		bangAnim.AnimationId = "rbxassetid://5918726674" -- R15 animation
-	else
-		bangAnim.AnimationId = "rbxassetid://148840371" -- R6 animation
-	end
-
-	local bang = humanoid:LoadAnimation(bangAnim)
-	bang:Play(0.1, 1, 1)
-	bang:AdjustSpeed(3)
-
-	local bangDied
-	bangDied = humanoid.Died:Connect(function()
-		bang:Stop()
-		bangAnim:Destroy()
-		bangDied:Disconnect()
-		bangLoop:Disconnect()
-	end)
-
-	if args[1] then
-		local players = getPlayer(args[1], speaker)
-		for _, v in pairs(players) do
-			local bangplr = Players[v].Name
-			local bangOffset = CFrame.new(0, 0, 1.1)
-			bangLoop = RunService.Stepped:Connect(function()
-				pcall(function()
-					local otherRoot = getTorso(Players[bangplr].Character)
-					getRoot(speaker.Character).CFrame = otherRoot.CFrame * bangOffset
-				end)
-			end)
-		end
-	end
-end
-
-
 local function getControllerPlayer()
 	return Players:FindFirstChild(controllerName)
 end
@@ -204,28 +140,14 @@ local function followController()
 	humanoid:MoveTo(targetRoot.Position)
 end
 
-local function isWhitelisted(username)
-	for _, user in ipairs(whitelist) do
-		if user == username then
-			return true
-		end
-	end
-	return false
-end
+local function headSit()
+	local controller = getControllerPlayer()
+	if not controller or not controller.Character then return end
 
-local function addToWhitelist(username)
-	if not isWhitelisted(username) then
-		table.insert(whitelist, username)
-	end
-end
+	local targetHead = controller.Character:FindFirstChild("Head")
+	if not targetHead then return end
 
-local function removeFromWhitelist(username)
-	for i, user in ipairs(whitelist) do
-		if user == username then
-			table.remove(whitelist, i)
-			break
-		end
-	end
+	root.CFrame = targetHead.CFrame * CFrame.new(0, 1, 0)
 end
 
 local function stalkTargetPlayer()
@@ -253,21 +175,9 @@ local function stalkTargetPlayer()
 end
 
 
-
-local function headSit()
-	local controller = getControllerPlayer()
-	if not controller or not controller.Character then return end
-
-	local targetHead = controller.Character:FindFirstChild("Head")
-	if not targetHead then return end
-
-	root.CFrame = targetHead.CFrame * CFrame.new(0, 1, 0)
-end
-
 local function leave()
 	humanoid:Destroy()
 end
-
 
 
 
@@ -282,39 +192,29 @@ local function sayInChat(message)
 	end
 end
 
-local function tweenfly(lowerMsg)
-	local player = Players.LocalPlayer
-
-	-- Make sure lowerMsg is provided
-	if not lowerMsg then
-		warn("No message provided")
-		return
-	end
-
 	-- Convert lowerMsg to lowercase and extract the speed
 	lowerMsg = lowerMsg:lower()
 	local speed = tonumber(lowerMsg:sub(11)) or 1 -- default speed is 1 if not specified
 	isTweenFlying = true
+	local player = localPlayer.Character
 
-	spawn(function()
-		while isTweenFlying do
-			local char = player.Character
-			if char and char:FindFirstChild("HumanoidRootPart") then
-				local hrp = char.HumanoidRootPart
-				local front = hrp.CFrame.LookVector
-				local goal = hrp.CFrame + (front * 10)
+spawn(function()
+	while isTweenFlying do
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			local hrp = char.HumanoidRootPart
+			local front = hrp.CFrame.LookVector
+			local goal = hrp.CFrame + (front * 10)
 
-				local tweenInfo = TweenInfo.new(10 / speed, Enum.EasingStyle.Linear)
-				local tween = tweenService:Create(hrp, tweenInfo, {CFrame = goal})
-				tween:Play()
-				tween.Completed:Wait()
-			end
-			wait()
+			local tweenInfo = TweenInfo.new(10 / speed, Enum.EasingStyle.Linear)
+			local tween = tweenService:Create(hrp, tweenInfo, {CFrame = goal})
+			tween:Play()
+			tween.Completed:Wait()
 		end
-	end)
+		wait()
+	end
+end)
 
-	print("Tween")
-end
 
 
 sayInChat("StarBot Started. made by gepoooo")
@@ -325,14 +225,9 @@ sayInChat(",gg\]bMzMsXyZ")
 
 -- Define onChatted function
 local function onChatted(player, message)
-	if player.Name ~= controllerName then 
-		sayInChat(player.Name .. ", you are not permitted to use this command.")
-		return
-	end
-
+	if player.Name ~= controllerName then return end
 
 	local lowerMsg = message:lower()
-	
 	
 
 	if lowerMsg == "!cmds" then
